@@ -38,7 +38,8 @@ export default function CodeGenerator({ deviceId, apiKey, powerMode, ingestUrl }
       </div>
       <pre className="text-xs text-gray-200 overflow-x-auto whitespace-pre-wrap max-h-96">{code}</pre>
       <p className="text-xs text-gray-500 mt-2">
-        Library yang dibutuhkan (install lewat Arduino Library Manager): WiFiManager, ArduinoJson.
+        Library yang perlu diinstall lewat Arduino Library Manager: WiFiManager, ArduinoJson.
+        (HTTPUpdate & WiFiClientSecure udah built-in di ESP32 core, gak perlu install manual.)
       </p>
     </div>
   );
@@ -47,18 +48,56 @@ export default function CodeGenerator({ deviceId, apiKey, powerMode, ingestUrl }
 function generateAcCode(deviceId: string, apiKey: string, ingestUrl: string) {
   return `#include <WiFiManager.h>
 #include <HTTPClient.h>
+#include <HTTPUpdate.h>
+#include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 
 WiFiManager wm;
+bool wifiJustConfigured = false;
+
+void saveConfigCallback() {
+  wifiJustConfigured = true;
+}
 
 const char* DEVICE_ID  = "${deviceId}";
 const char* API_KEY    = "${apiKey}";
 const char* INGEST_URL = "${ingestUrl}";
 
+// PENTING: naikkan versi ini setiap kali lo compile firmware baru buat
+// di-upload ke dashboard (menu Firmware di halaman device). Device
+// bakal ngasih tau dashboard versi berapa yang lagi jalan, dan cuma
+// update kalau dashboard punya versi lebih baru dari yang tertanam di sini.
+#define FIRMWARE_VERSION "1.0.0"
+
 // Interval AWAL 5 menit, tapi ini bukan final - tiap checkin, server
 // balikin nilai interval yang lagi aktif di dashboard, jadi kalau lo
 // ubah di web, device otomatis pakai jadwal baru TANPA upload ulang.
 unsigned long intervalMs = 5UL * 60UL * 1000UL;
+
+void checkFirmwareUpdate(JsonDocument& respDoc) {
+  if (!respDoc.containsKey("firmware_url")) return;
+
+  String url = respDoc["firmware_url"];
+  String targetVersion = respDoc["target_firmware_version"];
+  Serial.println("[OTA] Update tersedia: " + targetVersion + ", download dari: " + url);
+
+  WiFiClientSecure client;
+  client.setInsecure(); // skip validasi cert, cukup buat kebutuhan internal
+  httpUpdate.rebootOnUpdate(true);
+
+  t_httpUpdate_return result = httpUpdate.update(client, url);
+  switch (result) {
+    case HTTP_UPDATE_FAILED:
+      Serial.println("[OTA] Gagal: " + httpUpdate.getLastErrorString());
+      break;
+    case HTTP_UPDATE_NO_UPDATES:
+      Serial.println("[OTA] Tidak ada update baru");
+      break;
+    case HTTP_UPDATE_OK:
+      Serial.println("[OTA] Berhasil, device bakal restart otomatis");
+      break; // device restart otomatis kalau rebootOnUpdate(true)
+  }
+}
 
 void sendData() {
   HTTPClient http;
@@ -68,8 +107,17 @@ void sendData() {
   StaticJsonDocument<256> doc;
   doc["device_id"] = DEVICE_ID;
   doc["api_key"] = API_KEY;
-  doc["message"] = "checkin normal";
+
+  // Kalau baru aja disetting WiFi baru lewat portal, catat sebagai
+  // riwayat di log - bakal muncul di "Live log" dashboard.
+  if (wifiJustConfigured) {
+    doc["message"] = "WiFi baru disimpan & berhasil connect ke: " + WiFi.SSID();
+    wifiJustConfigured = false;
+  } else {
+    doc["message"] = "checkin normal";
+  }
   doc["wifi_rssi"] = WiFi.RSSI(); // kekuatan sinyal wifi dalam dBm
+  doc["firmware_version"] = FIRMWARE_VERSION;
   // doc["data"]["suhu"] = 25.4; // isi data sensor lo di sini
 
   String body;
@@ -89,6 +137,9 @@ void sendData() {
       intervalMs = (unsigned long)newInterval * 1000UL;
       Serial.println("[Config] Interval diupdate: " + String(newInterval) + " detik");
     }
+
+    // Cek update firmware (OTA) - kalau ada, device restart otomatis setelahnya
+    checkFirmwareUpdate(respDoc);
 
     // Cek kalau ada command pending dari dashboard
     JsonArray commands = respDoc["commands"];
@@ -113,10 +164,20 @@ void sendData() {
 void setup() {
   Serial.begin(115200);
   wm.setConfigPortalTimeout(180);
+  wm.setSaveConfigCallback(saveConfigCallback);
 
   bool connected = wm.autoConnect("ESP32-Setup");
+
   if (!connected) {
-    Serial.println("[WiFi] Gagal connect, restart...");
+    // Gagal connect (bisa jadi wifi baru salah/gak ke-reach). Daripada
+    // restart-loop nyoba wifi yang sama terus, buka lagi hotspot setup
+    // supaya bisa dibenerin tanpa perlu colok USB.
+    Serial.println("[WiFi] Gagal connect, membuka ulang mode setup...");
+    connected = wm.startConfigPortal("ESP32-Setup");
+  }
+
+  if (!connected) {
+    Serial.println("[WiFi] Tetap gagal, restart...");
     delay(1000);
     ESP.restart();
   }
@@ -137,15 +198,44 @@ void loop() {
 function generateBatteryCode(deviceId: string, apiKey: string, ingestUrl: string) {
   return `#include <WiFiManager.h>
 #include <HTTPClient.h>
+#include <HTTPUpdate.h>
+#include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 #include <Preferences.h>
 
 WiFiManager wm;
 Preferences prefs;
+bool wifiJustConfigured = false;
+
+void saveConfigCallback() {
+  wifiJustConfigured = true;
+}
 
 const char* DEVICE_ID  = "${deviceId}";
 const char* API_KEY    = "${apiKey}";
 const char* INGEST_URL = "${ingestUrl}";
+
+// PENTING: naikkan versi ini setiap kali lo compile firmware baru buat
+// di-upload ke dashboard (menu Firmware di halaman device).
+#define FIRMWARE_VERSION "1.0.0"
+
+void checkFirmwareUpdate(JsonDocument& respDoc) {
+  if (!respDoc.containsKey("firmware_url")) return;
+
+  String url = respDoc["firmware_url"];
+  String targetVersion = respDoc["target_firmware_version"];
+  Serial.println("[OTA] Update tersedia: " + targetVersion + ", download dari: " + url);
+
+  WiFiClientSecure client;
+  client.setInsecure();
+  httpUpdate.rebootOnUpdate(true);
+
+  t_httpUpdate_return result = httpUpdate.update(client, url);
+  if (result == HTTP_UPDATE_FAILED) {
+    Serial.println("[OTA] Gagal: " + httpUpdate.getLastErrorString());
+  }
+  // Kalau HTTP_UPDATE_OK, device udah auto-restart duluan sebelum baris ini
+}
 
 // Deep sleep bikin RAM kereset total tiap bangun, jadi interval disimpan
 // di NVS (Preferences) biar gak balik ke default tiap kali device bangun.
@@ -176,9 +266,16 @@ void sendData() {
   StaticJsonDocument<256> doc;
   doc["device_id"] = DEVICE_ID;
   doc["api_key"] = API_KEY;
-  doc["message"] = "checkin battery";
+
+  if (wifiJustConfigured) {
+    doc["message"] = "WiFi baru disimpan & berhasil connect ke: " + WiFi.SSID();
+    wifiJustConfigured = false;
+  } else {
+    doc["message"] = "checkin battery";
+  }
   doc["battery_level"] = readBatteryVoltage();
   doc["wifi_rssi"] = WiFi.RSSI(); // kekuatan sinyal wifi dalam dBm
+  doc["firmware_version"] = FIRMWARE_VERSION;
   // doc["data"]["suhu"] = 25.4; // isi data sensor lo di sini
 
   String body;
@@ -199,6 +296,10 @@ void sendData() {
       Serial.println("[Config] Interval diupdate: " + String(newInterval) + " detik");
     }
 
+    // Cek update firmware (OTA) sebelum sleep - kalau ada & berhasil,
+    // device restart otomatis (gak akan sampai baris esp_deep_sleep_start di bawah)
+    checkFirmwareUpdate(respDoc);
+
     JsonArray commands = respDoc["commands"];
     for (JsonObject cmd : commands) {
       String command = cmd["command"];
@@ -215,13 +316,20 @@ void sendData() {
 void setup() {
   Serial.begin(115200);
   wm.setConfigPortalTimeout(180);
+  wm.setSaveConfigCallback(saveConfigCallback);
 
   bool connected = wm.autoConnect("ESP32-Setup");
+
+  if (!connected) {
+    Serial.println("[WiFi] Gagal connect, membuka ulang mode setup...");
+    connected = wm.startConfigPortal("ESP32-Setup");
+  }
+
   if (connected) {
     Serial.println("[WiFi] Terhubung: " + WiFi.SSID());
     sendData(); // interval ke-update di sini kalau ada perubahan dari dashboard
   } else {
-    Serial.println("[WiFi] Gagal connect, coba lagi siklus berikutnya");
+    Serial.println("[WiFi] Tetap gagal, coba lagi siklus berikutnya");
   }
 
   uint32_t sleepSeconds = loadSavedInterval();
