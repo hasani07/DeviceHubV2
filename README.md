@@ -78,6 +78,17 @@ dengan `offline_threshold_minutes`), bukan lewat cron job. Ini sengaja,
 karena Vercel Hobby plan cuma bolehin cron jalan 1x/hari — jadi gak
 diandalkan buat status yang butuh update tiap beberapa menit.
 
+## OTA (update firmware jarak jauh)
+Tiap device punya `firmware_version` (dilaporkan otomatis tiap checkin).
+Buat push update: compile firmware baru di Arduino IDE dengan nilai
+`FIRMWARE_VERSION` yang dinaikkan, export jadi `.bin` (menu Sketch >
+Export Compiled Binary), lalu upload lewat bagian "Firmware" di halaman
+detail device. Device otomatis download & flash sendiri pas checkin
+berikutnya, gak perlu colok USB.
+
+Firmware disimpan di Supabase Storage bucket `firmware` (dibuat otomatis
+lewat `schema.sql`/`migration_ota.sql`).
+
 ## Catatan penting
 - `SUPABASE_SERVICE_ROLE_KEY` bisa bypass semua RLS. Jangan pernah diimport di komponen `'use client'`, cuma boleh dipakai di `app/api/**`.
 - Log otomatis kepotong ke 500 baris terakhir per device (trigger di database, lihat `schema.sql`), gak perlu maintenance manual.
