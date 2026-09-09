@@ -30,16 +30,16 @@ export default function ChangeWifiForm({ deviceId, isOnline }: Props) {
   }
 
   return (
-    <div className="p-4 rounded-lg border border-gray-800 bg-gray-900 space-y-3">
-      <h2 className="text-sm text-gray-400">Ganti WiFi (device online)</h2>
-      <p className="text-xs text-gray-500">
+    <div className="p-5 rounded-3xl glass-edge backdrop-blur-xl bg-white/[0.04] border border-white/[0.1] space-y-3">
+      <h2 className="text-sm font-medium text-white/70">Ganti WiFi (device online)</h2>
+      <p className="text-xs text-white/40">
         Kirim WiFi baru langsung tanpa perlu buka hotspot manual. Cuma efektif kalau device
         lagi online — kalau device offline/belum pernah connect, pakai tombol "Reset WiFi" di
         atas buat setup lewat hotspot.
       </p>
 
       {!isOnline && (
-        <p className="text-xs text-yellow-500">
+        <p className="text-xs text-amber-300">
           Device lagi offline. Command tetap bisa dikirim & nunggu di antrian, tapi baru
           jalan kalau device online lagi.
         </p>
@@ -51,7 +51,7 @@ export default function ChangeWifiForm({ deviceId, isOnline }: Props) {
           placeholder="Nama WiFi (SSID)"
           value={ssid}
           onChange={(e) => setSsid(e.target.value)}
-          className="px-3 py-2 rounded bg-gray-950 border border-gray-800 text-sm"
+          className="px-4 py-2 rounded-full bg-white/[0.05] border border-white/[0.12] text-sm outline-none focus:border-violet-300/50 transition-colors"
           required
         />
         <input
@@ -59,18 +59,18 @@ export default function ChangeWifiForm({ deviceId, isOnline }: Props) {
           placeholder="Password WiFi"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="px-3 py-2 rounded bg-gray-950 border border-gray-800 text-sm"
+          className="px-4 py-2 rounded-full bg-white/[0.05] border border-white/[0.12] text-sm outline-none focus:border-violet-300/50 transition-colors"
         />
         <button
           type="submit"
           disabled={sending}
-          className="px-3 py-2 rounded bg-blue-600 hover:bg-blue-500 text-sm disabled:opacity-50"
+          className="px-5 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-violet-500 to-cyan-400 text-white hover:opacity-90 transition-opacity disabled:opacity-40"
         >
           {sending ? 'Mengirim...' : 'Kirim WiFi baru'}
         </button>
       </form>
 
-      <p className="text-xs text-gray-600">
+      <p className="text-xs text-white/30">
         Catatan: password disimpan apa adanya (plaintext) di database, bukan terenkripsi.
         Karena dashboard ini gak pakai login, siapapun yang akses URL ini juga bisa lihat
         command yang tersimpan.

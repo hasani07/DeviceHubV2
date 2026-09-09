@@ -36,16 +36,17 @@ export default function FirmwareHistory({ deviceId }: { deviceId: string }) {
   }
 
   return (
-    <div>
-      <h3 className="text-xs text-gray-500 mb-1">Riwayat update firmware (3 terakhir)</h3>
+    <div className="p-5 rounded-3xl glass-edge backdrop-blur-xl bg-white/[0.03] border border-white/[0.08]">
+      <h3 className="text-xs font-medium text-white/50 mb-2">Riwayat update firmware (3 terakhir)</h3>
       {history.length === 0 ? (
-        <p className="text-xs text-gray-600">Belum pernah update</p>
+        <p className="text-xs text-white/30">Belum pernah update</p>
       ) : (
-        <ul className="space-y-1">
+        <ul className="space-y-1.5">
           {history.map((h) => (
-            <li key={h.id} className="text-xs text-gray-400">
-              <span className="text-gray-200">v{h.version}</span> ·{' '}
-              {new Date(h.created_at).toLocaleString()}
+            <li key={h.id} className="text-xs text-white/50 flex items-center gap-2">
+              <span className="w-1 h-1 rounded-full bg-violet-300/60" />
+              <span className="text-white/80">v{h.version}</span>
+              <span className="text-white/30">· {new Date(h.created_at).toLocaleString()}</span>
             </li>
           ))}
         </ul>

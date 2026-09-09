@@ -59,14 +59,14 @@ export default function FirmwareManager({ deviceId, currentVersion, targetVersio
   const updatePending = targetVersion && targetVersion !== currentVersion;
 
   return (
-    <div className="p-4 rounded-lg border border-gray-800 bg-gray-900 space-y-3">
-      <h2 className="text-sm text-gray-400">Firmware (OTA)</h2>
-      <p className="text-xs text-gray-500">
-        Versi yang lagi jalan di device: <span className="text-gray-300">{currentVersion}</span>
+    <div className="p-5 rounded-3xl glass-edge backdrop-blur-xl bg-white/[0.04] border border-white/[0.1] space-y-3">
+      <h2 className="text-sm font-medium text-white/70">Firmware (OTA)</h2>
+      <p className="text-xs text-white/40">
+        Versi yang lagi jalan di device: <span className="text-white/80">{currentVersion}</span>
       </p>
 
       {updatePending && (
-        <p className="text-xs text-yellow-400">
+        <p className="text-xs text-amber-300">
           Update ke v{targetVersion} menunggu diterima device pada checkin berikutnya.
         </p>
       )}
@@ -76,26 +76,26 @@ export default function FirmwareManager({ deviceId, currentVersion, targetVersio
           type="file"
           accept=".bin"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          className="text-xs text-gray-400"
+          className="text-xs text-white/50 file:mr-3 file:px-3 file:py-1.5 file:rounded-full file:border-0 file:bg-white/10 file:text-white/70 file:text-xs"
         />
         <input
           type="text"
           placeholder="Versi, misal 1.1.0"
           value={version}
           onChange={(e) => setVersion(e.target.value)}
-          className="px-3 py-2 rounded bg-gray-950 border border-gray-800 text-sm w-32"
+          className="px-4 py-2 rounded-full bg-white/[0.05] border border-white/[0.12] text-sm outline-none w-32"
         />
         <button
           type="submit"
           disabled={uploading}
-          className="px-3 py-2 rounded bg-blue-600 hover:bg-blue-500 text-sm disabled:opacity-50"
+          className="px-5 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-violet-500 to-cyan-400 text-white hover:opacity-90 transition-opacity disabled:opacity-40"
         >
           {uploading ? 'Mengupload...' : 'Push update'}
         </button>
       </form>
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <p className="text-xs text-rose-300">{error}</p>}
 
-      <p className="text-xs text-gray-600">
+      <p className="text-xs text-white/30">
         Compile firmware baru di Arduino IDE dengan FIRMWARE_VERSION yang dinaikkan sesuai versi
         di atas, export sebagai .bin (Sketch &gt; Export Compiled Binary), lalu upload di sini.
       </p>

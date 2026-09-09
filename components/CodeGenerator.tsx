@@ -24,20 +24,20 @@ export default function CodeGenerator({ deviceId, apiKey, powerMode, ingestUrl }
   };
 
   return (
-    <div className="rounded-lg border border-gray-800 bg-gray-950 p-4">
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-sm text-gray-400">
+    <div className="p-2 rounded-3xl glass-edge backdrop-blur-xl bg-white/[0.03] border border-white/[0.08]">
+      <div className="flex justify-between items-center px-3 py-2">
+        <span className="text-xs text-white/50">
           Mode: {powerMode === 'battery' ? 'battery (deep sleep)' : 'AC (loop biasa)'}
         </span>
         <button
           onClick={handleCopy}
-          className="text-xs px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-500"
+          className="text-xs px-4 py-1.5 rounded-full font-medium bg-gradient-to-r from-violet-500 to-cyan-400 text-white hover:opacity-90 transition-opacity"
         >
           {copied ? 'Tersalin!' : 'Copy code'}
         </button>
       </div>
-      <pre className="text-xs text-gray-200 overflow-x-auto whitespace-pre-wrap max-h-96">{code}</pre>
-      <p className="text-xs text-gray-500 mt-2">
+      <pre className="text-xs text-white/70 overflow-x-auto whitespace-pre-wrap max-h-96 rounded-2xl bg-black/60 p-4">{code}</pre>
+      <p className="text-xs text-white/30 px-3 py-2">
         Library yang perlu diinstall lewat Arduino Library Manager: WiFiManager, ArduinoJson.
         (HTTPUpdate & WiFiClientSecure udah built-in di ESP32 core, gak perlu install manual.)
       </p>

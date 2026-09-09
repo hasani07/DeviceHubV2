@@ -9,7 +9,6 @@ export default function LogViewer({ deviceId }: { deviceId: string }) {
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [isLive, setIsLive] = useState(false);
 
-  // Load history awal sekali, terlepas dari status live/stop
   useEffect(() => {
     let active = true;
     async function loadInitial() {
@@ -27,7 +26,6 @@ export default function LogViewer({ deviceId }: { deviceId: string }) {
     };
   }, [deviceId]);
 
-  // Subscribe realtime CUMA kalau lagi live
   useEffect(() => {
     if (!isLive) return;
 
@@ -48,32 +46,36 @@ export default function LogViewer({ deviceId }: { deviceId: string }) {
   }, [isLive, deviceId]);
 
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-2">
-        <button
-          onClick={() => setIsLive(true)}
-          disabled={isLive}
-          className="text-xs px-3 py-1 rounded bg-green-900 text-green-300 disabled:opacity-40"
-        >
-          ▶ Run
-        </button>
-        <button
-          onClick={() => setIsLive(false)}
-          disabled={!isLive}
-          className="text-xs px-3 py-1 rounded bg-red-950 text-red-300 disabled:opacity-40"
-        >
-          ■ Stop
-        </button>
-        <span className="text-xs text-gray-500">
+    <div className="p-2 rounded-3xl glass-edge backdrop-blur-xl bg-white/[0.03] border border-white/[0.08]">
+      <div className="flex items-center gap-2 px-3 py-2">
+        <div className="flex rounded-full bg-white/[0.05] border border-white/[0.1] p-0.5">
+          <button
+            onClick={() => setIsLive(true)}
+            className={`text-xs px-3 py-1 rounded-full transition-colors ${
+              isLive ? 'bg-emerald-400/20 text-emerald-300' : 'text-white/40 hover:text-white/60'
+            }`}
+          >
+            ▶ Run
+          </button>
+          <button
+            onClick={() => setIsLive(false)}
+            className={`text-xs px-3 py-1 rounded-full transition-colors ${
+              !isLive ? 'bg-rose-400/20 text-rose-300' : 'text-white/40 hover:text-white/60'
+            }`}
+          >
+            ■ Stop
+          </button>
+        </div>
+        <span className="text-xs text-white/30">
           {isLive ? 'Live - update otomatis' : 'Stop - klik Run buat lanjut live'}
         </span>
       </div>
 
-      <div className="rounded-lg border border-gray-800 bg-black p-3 h-80 overflow-y-auto font-mono text-xs text-green-400">
-        {logs.length === 0 && <div className="text-gray-600">Belum ada log masuk...</div>}
+      <div className="rounded-2xl bg-black/60 p-3 h-80 overflow-y-auto font-mono text-xs text-emerald-300/90">
+        {logs.length === 0 && <div className="text-white/25">Belum ada log masuk...</div>}
         {logs.map((log) => (
           <div key={log.id} className="whitespace-pre-wrap break-words">
-            <span className="text-gray-600">{new Date(log.created_at).toLocaleTimeString()}</span>{' '}
+            <span className="text-white/30">{new Date(log.created_at).toLocaleTimeString()}</span>{' '}
             {log.message}
             {log.data ? ' ' + JSON.stringify(log.data) : ''}
           </div>
