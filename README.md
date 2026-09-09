@@ -89,6 +89,23 @@ berikutnya, gak perlu colok USB.
 Firmware disimpan di Supabase Storage bucket `firmware` (dibuat otomatis
 lewat `schema.sql`/`migration_ota.sql`).
 
+## Ganti WiFi tanpa hotspot (device online)
+Kalau device lagi online, WiFi baru bisa dikirim langsung dari dashboard
+(form "Ganti WiFi" di halaman device) tanpa perlu buka hotspot manual.
+Device coba connect ke WiFi baru pakai koneksi yang ada; kalau gagal,
+otomatis fallback buka hotspot `ESP32-Setup` biar tetap bisa dibenerin.
+Tombol "Reset WiFi" yang lama tetap ada buat kondisi device belum online
+sama sekali / mau setup ulang manual dari device-nya langsung.
+
+## Riwayat WiFi & Firmware
+Dashboard nyimpen 3 kejadian terakhir untuk ganti WiFi (`wifi_history`) dan
+update firmware (`firmware_history`), lebih dari itu otomatis kehapus lewat
+trigger di database — sama pola-nya kayak log yang dicap 500 baris.
+
+WiFi SSID/password TIDAK diisi lewat dashboard. Device buka hotspot sendiri
+(`ESP32-Setup`) tiap kali butuh setup ulang, dan dari situ user mengisinya
+lewat captive portal di HP — dashboard cuma nampilin riwayat hasilnya.
+
 ## Catatan penting
 - `SUPABASE_SERVICE_ROLE_KEY` bisa bypass semua RLS. Jangan pernah diimport di komponen `'use client'`, cuma boleh dipakai di `app/api/**`.
 - Log otomatis kepotong ke 500 baris terakhir per device (trigger di database, lihat `schema.sql`), gak perlu maintenance manual.
