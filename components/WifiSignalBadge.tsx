@@ -1,5 +1,11 @@
 export default function WifiSignalBadge({ rssi }: { rssi: number | null }) {
-  if (rssi == null) return null;
+  if (rssi == null) {
+    return (
+      <span className="px-2 py-1 rounded text-xs font-medium bg-gray-800 text-gray-500">
+        Wifi: belum ada data
+      </span>
+    );
+  }
 
   // Rentang umum RSSI wifi dalam dBm: semakin mendekati 0, semakin kuat.
   let label = 'Lemah';
