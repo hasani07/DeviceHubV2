@@ -7,6 +7,9 @@ import DeviceStatusBadge from '@/components/DeviceStatusBadge';
 import CodeGenerator from '@/components/CodeGenerator';
 import WifiSignalBadge from '@/components/WifiSignalBadge';
 import FirmwareManager from '@/components/FirmwareManager';
+import WifiHistory from '@/components/WifiHistory';
+import ChangeWifiForm from '@/components/ChangeWifiForm';
+import FirmwareHistory from '@/components/FirmwareHistory';
 import { isDeviceOnline } from '@/lib/deviceStatus';
 
 type Device = {
@@ -104,6 +107,17 @@ export default function DeviceDetailPage({
         </button>
       </div>
 
+      <p className="text-xs text-gray-500">
+        SSID & password WiFi diisi langsung di device (bukan di dashboard) — setelah restart
+        atau reset wifi, device buka hotspot <span className="text-gray-300">ESP32-Setup</span>,
+        connect HP ke situ buat pilih & isi WiFi. Kalau device lagi online, bisa juga pakai
+        form di bawah buat ganti WiFi tanpa perlu hotspot.
+      </p>
+
+      <ChangeWifiForm deviceId={device.device_id} isOnline={online} />
+
+      <WifiHistory deviceId={device.device_id} />
+
       <div className="p-4 rounded-lg border border-gray-800 bg-gray-900 space-y-2">
         <h2 className="text-sm text-gray-400">Checkin interval</h2>
         <p className="text-xs text-gray-500">
@@ -134,6 +148,8 @@ export default function DeviceDetailPage({
         targetVersion={device.target_firmware_version}
         onPushed={loadDevice}
       />
+
+      <FirmwareHistory deviceId={device.device_id} />
 
       {device.power_mode === 'battery' && (
         <p className="text-xs text-gray-500">
