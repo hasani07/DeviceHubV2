@@ -112,6 +112,8 @@ void sendData() {
   // riwayat di log - bakal muncul di "Live log" dashboard.
   if (wifiJustConfigured) {
     doc["message"] = "WiFi baru disimpan & berhasil connect ke: " + WiFi.SSID();
+    doc["wifi_changed"] = true;
+    doc["ssid"] = WiFi.SSID();
     wifiJustConfigured = false;
   } else {
     doc["message"] = "checkin normal";
@@ -153,6 +155,28 @@ void sendData() {
         wm.resetSettings();
         delay(500);
         ESP.restart();
+      } else if (command == "change_wifi") {
+        // Device lagi online, jadi ganti wifi langsung lewat koneksi yang
+        // ada, gak perlu buka hotspot setup manual.
+        String newSsid = cmd["payload"]["ssid"];
+        String newPass = cmd["payload"]["password"];
+        Serial.println("[WiFi] Perintah ganti wifi ke: " + newSsid);
+
+        WiFi.disconnect();
+        WiFi.begin(newSsid.c_str(), newPass.c_str());
+
+        unsigned long start = millis();
+        while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
+          delay(500);
+        }
+
+        if (WiFi.status() == WL_CONNECTED) {
+          Serial.println("[WiFi] Berhasil pindah ke: " + WiFi.SSID());
+          wifiJustConfigured = true; // biar kecatet ke riwayat pas checkin berikutnya
+        } else {
+          Serial.println("[WiFi] Gagal connect ke wifi baru, buka portal setup manual...");
+          wm.startConfigPortal("ESP32-Setup");
+        }
       }
     }
   } else {
@@ -269,6 +293,8 @@ void sendData() {
 
   if (wifiJustConfigured) {
     doc["message"] = "WiFi baru disimpan & berhasil connect ke: " + WiFi.SSID();
+    doc["wifi_changed"] = true;
+    doc["ssid"] = WiFi.SSID();
     wifiJustConfigured = false;
   } else {
     doc["message"] = "checkin battery";
@@ -305,6 +331,28 @@ void sendData() {
       String command = cmd["command"];
       if (command == "reset_wifi") {
         wm.resetSettings();
+      } else if (command == "change_wifi") {
+        String newSsid = cmd["payload"]["ssid"];
+        String newPass = cmd["payload"]["password"];
+        Serial.println("[WiFi] Perintah ganti wifi ke: " + newSsid);
+
+        WiFi.disconnect();
+        WiFi.begin(newSsid.c_str(), newPass.c_str());
+
+        unsigned long start = millis();
+        while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
+          delay(500);
+        }
+
+        if (WiFi.status() == WL_CONNECTED) {
+          Serial.println("[WiFi] Berhasil pindah ke: " + WiFi.SSID());
+          // Kirim ulang checkin biar riwayat ganti wifi kecatet sebelum sleep
+          wifiJustConfigured = true;
+          sendData();
+        } else {
+          Serial.println("[WiFi] Gagal connect ke wifi baru, buka portal setup manual...");
+          wm.startConfigPortal("ESP32-Setup");
+        }
       }
       // command "restart" gak relevan di sini karena device
       // emang bakal restart total tiap bangun dari deep sleep
