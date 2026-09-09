@@ -8,7 +8,7 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { device_id, api_key, message, data, battery_level, wifi_rssi, firmware_version } = body;
+  const { device_id, api_key, message, data, battery_level, wifi_rssi, firmware_version, wifi_changed, ssid } = body;
 
   if (!device_id || !api_key) {
     return NextResponse.json({ error: 'device_id dan api_key wajib diisi' }, { status: 400 });
@@ -32,6 +32,17 @@ export async function POST(req: NextRequest) {
     message: message ?? null,
     data: data ?? null,
   });
+
+  // 2b. Catat riwayat ganti wifi (trigger otomatis jaga cuma 3 terakhir)
+  if (wifi_changed && ssid) {
+    await supabaseAdmin.from('wifi_history').insert({ device_id, ssid });
+  }
+
+  // 2c. Catat riwayat firmware kalau versi yang dilaporkan beda dari
+  // yang tercatat sebelumnya (trigger otomatis jaga cuma 3 terakhir)
+  if (firmware_version && firmware_version !== device.firmware_version) {
+    await supabaseAdmin.from('firmware_history').insert({ device_id, version: firmware_version });
+  }
 
   // 3. Update status device jadi online + last_seen + battery/rssi/firmware kalau ada
   const updates: Record<string, unknown> = {
