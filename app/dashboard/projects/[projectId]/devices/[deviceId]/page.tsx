@@ -6,6 +6,7 @@ import LogViewer from '@/components/LogViewer';
 import DeviceStatusBadge from '@/components/DeviceStatusBadge';
 import CodeGenerator from '@/components/CodeGenerator';
 import WifiSignalBadge from '@/components/WifiSignalBadge';
+import FirmwareManager from '@/components/FirmwareManager';
 import { isDeviceOnline } from '@/lib/deviceStatus';
 
 type Device = {
@@ -20,6 +21,8 @@ type Device = {
   wifi_rssi: number | null;
   checkin_interval_seconds: number;
   offline_threshold_minutes: number;
+  firmware_version: string;
+  target_firmware_version: string | null;
 };
 
 export default function DeviceDetailPage({
@@ -124,6 +127,13 @@ export default function DeviceDetailPage({
           </span>
         </div>
       </div>
+
+      <FirmwareManager
+        deviceId={device.device_id}
+        currentVersion={device.firmware_version}
+        targetVersion={device.target_firmware_version}
+        onPushed={loadDevice}
+      />
 
       {device.power_mode === 'battery' && (
         <p className="text-xs text-gray-500">
