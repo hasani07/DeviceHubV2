@@ -8,7 +8,7 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { device_id, api_key, message, data, battery_level, wifi_rssi } = body;
+  const { device_id, api_key, message, data, battery_level, wifi_rssi, firmware_version } = body;
 
   if (!device_id || !api_key) {
     return NextResponse.json({ error: 'device_id dan api_key wajib diisi' }, { status: 400 });
@@ -33,16 +33,25 @@ export async function POST(req: NextRequest) {
     data: data ?? null,
   });
 
-  // 3. Update status device jadi online + last_seen + battery kalau ada
-  await supabaseAdmin
-    .from('devices')
-    .update({
-      last_seen: new Date().toISOString(),
-      status: 'online',
-      battery_level: battery_level ?? device.battery_level,
-      wifi_rssi: wifi_rssi ?? device.wifi_rssi,
-    })
-    .eq('device_id', device_id);
+  // 3. Update status device jadi online + last_seen + battery/rssi/firmware kalau ada
+  const updates: Record<string, unknown> = {
+    last_seen: new Date().toISOString(),
+    status: 'online',
+    battery_level: battery_level ?? device.battery_level,
+    wifi_rssi: wifi_rssi ?? device.wifi_rssi,
+  };
+
+  if (firmware_version) {
+    updates.firmware_version = firmware_version;
+    // Kalau versi yang dilaporkan udah sama kayak target, update barusan
+    // sukses - bersihin target biar gak ditawarin update itu lagi.
+    if (device.target_firmware_version && firmware_version === device.target_firmware_version) {
+      updates.target_firmware_version = null;
+      updates.firmware_url = null;
+    }
+  }
+
+  await supabaseAdmin.from('devices').update(updates).eq('device_id', device_id);
 
   // 4. Ambil command yang masih pending buat device ini
   const { data: pendingCommands } = await supabaseAdmin
@@ -60,6 +69,11 @@ export async function POST(req: NextRequest) {
       .in('id', pendingCommands.map((c) => c.id));
   }
 
+  const hasPendingUpdate =
+    device.target_firmware_version &&
+    device.firmware_url &&
+    device.target_firmware_version !== firmware_version;
+
   return NextResponse.json({
     status: 'ok',
     commands: pendingCommands ?? [],
@@ -67,5 +81,10 @@ export async function POST(req: NextRequest) {
     // Jadi kalau lo ubah interval di dashboard, device auto-nyesuain
     // di siklus berikutnya, TANPA perlu upload ulang kode.
     checkin_interval_seconds: device.checkin_interval_seconds,
+    // Kalau ada, device bakal download & flash otomatis (OTA)
+    ...(hasPendingUpdate && {
+      firmware_url: device.firmware_url,
+      target_firmware_version: device.target_firmware_version,
+    }),
   });
 }
