@@ -2,7 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --glass-fill: rgba(255, 255, 255, 0.06);
+  --glass-fill-strong: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.14);
+}
+
 body {
-  background: #030712;
-  color: #f3f4f6;
+  background: #05060b;
+  color: #f5f6fa;
+}
+
+::selection {
+  background: rgba(124, 108, 246, 0.35);
+  color: #ffffff;
+}
+
+/* Highlight tipis di tepi atas panel kaca, biar kesan mantul cahaya */
+.glass-edge {
+  position: relative;
+}
+.glass-edge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 40%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
